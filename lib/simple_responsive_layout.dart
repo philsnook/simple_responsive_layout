@@ -223,6 +223,10 @@ ResponsiveSettingsBase _resolveSettings(
 /// )
 /// ```
 class ResponsiveChild extends StatelessWidget {
+  /// Builder function for default layout.
+  /// Takes the build context and child widget and returns a wrapped widget.
+  final Widget Function(BuildContext context, Widget child)? defaultChild;
+
   /// Builder function for mobile layout.
   /// Takes the build context and child widget and returns a wrapped widget.
   final Widget Function(BuildContext context, Widget child)? mobileChild;
@@ -257,6 +261,7 @@ class ResponsiveChild extends StatelessWidget {
     this.settings,
     this.child,
     this.childBuilder,
+    this.defaultChild,
     this.mobileChild,
     this.tabletChild,
     this.desktopChild,
@@ -272,7 +277,7 @@ class ResponsiveChild extends StatelessWidget {
     }
 
     return ResponsiveValue<Widget>(
-      defaultValue: childWidget,
+      defaultValue: defaultChild?.call(context, childWidget) ?? childWidget,
       mobileValue: mobileChild?.call(context, childWidget),
       tabletValue: tabletChild?.call(context, childWidget),
       desktopValue: desktopChild?.call(context, childWidget),
