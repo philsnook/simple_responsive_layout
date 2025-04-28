@@ -1,6 +1,6 @@
 name: simple_responsive_layout
 description: "A super lightweight Flutter package for simple mobile, tablet, and desktop responsive layouts."
-version: 1.0.2
+version: 1.0.3
 homepage: https://github.com/philsnook/simple_responsive_layout
 repository: https://github.com/philsnook/simple_responsive_layout
 issue_tracker: https://github.com/philsnook/simple_responsive_layout/issues
