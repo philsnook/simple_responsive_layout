@@ -32,9 +32,8 @@ class ResponsiveSettingsProvider extends InheritedWidget {
   ///
   /// Throws an exception if no [ResponsiveSettingsProvider] is found in the widget tree.
   static ResponsiveSettingsBase of(BuildContext context) {
-    final provider =
-        context
-            .dependOnInheritedWidgetOfExactType<ResponsiveSettingsProvider>();
+    final provider = context
+        .dependOnInheritedWidgetOfExactType<ResponsiveSettingsProvider>();
     if (provider == null) {
       throw Exception('ResponsiveSettingsProvider not found in context.');
     }
@@ -131,27 +130,25 @@ class ResponsiveSettings implements ResponsiveSettingsBase {
 
     return inclusiveBreakpoints
         ? ResponsiveInfo(
-          isMobile: isMobile,
-          isTablet: isTablet || isMobile,
-          isDesktop: isDesktop || isTablet || isMobile,
-          deviceType:
-              isMobile
-                  ? ResponsiveDeviceType.mobile
-                  : isTablet
-                  ? ResponsiveDeviceType.tablet
-                  : ResponsiveDeviceType.desktop,
-        )
+            isMobile: isDesktop || isTablet || isMobile,
+            isTablet: isTablet || isMobile,
+            isDesktop: isDesktop,
+            deviceType: isMobile
+                ? ResponsiveDeviceType.mobile
+                : isTablet
+                    ? ResponsiveDeviceType.tablet
+                    : ResponsiveDeviceType.desktop,
+          )
         : ResponsiveInfo(
-          isMobile: isMobile,
-          isTablet: isTablet,
-          isDesktop: isDesktop,
-          deviceType:
-              isMobile
-                  ? ResponsiveDeviceType.mobile
-                  : isTablet
-                  ? ResponsiveDeviceType.tablet
-                  : ResponsiveDeviceType.desktop,
-        );
+            isMobile: isMobile,
+            isTablet: isTablet,
+            isDesktop: isDesktop,
+            deviceType: isMobile
+                ? ResponsiveDeviceType.mobile
+                : isTablet
+                    ? ResponsiveDeviceType.tablet
+                    : ResponsiveDeviceType.desktop,
+          );
   }
 }
 
@@ -245,7 +242,7 @@ class ResponsiveChild extends StatelessWidget {
   /// Dynamic builder function for the child widget based on responsive info.
   /// Takes precedence over [child] if provided.
   final Widget Function(BuildContext context, ResponsiveInfo info)?
-  childBuilder;
+      childBuilder;
 
   /// Optional responsive settings to override those from context.
   final ResponsiveSettingsBase? settings;
@@ -274,17 +271,13 @@ class ResponsiveChild extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    if (info.isMobile && mobileChild != null) {
-      return mobileChild!(context, childWidget);
-    }
-    if (info.isTablet && tabletChild != null) {
-      return tabletChild!(context, childWidget);
-    }
-    if (info.isDesktop && desktopChild != null) {
-      return desktopChild!(context, childWidget);
-    }
-
-    return childWidget;
+    return ResponsiveValue<Widget>(
+      defaultValue: childWidget,
+      mobileValue: mobileChild?.call(context, childWidget),
+      tabletValue: tabletChild?.call(context, childWidget),
+      desktopValue: desktopChild?.call(context, childWidget),
+      settings: settings,
+    ).value(context);
   }
 }
 
@@ -307,17 +300,17 @@ class ResponsiveLayout extends StatelessWidget {
   /// Builder function for mobile layout.
   /// Takes the build context and children list and returns a container widget.
   final Widget Function(BuildContext context, List<Widget> children)?
-  mobileChild;
+      mobileChild;
 
   /// Builder function for tablet layout.
   /// Takes the build context and children list and returns a container widget.
   final Widget Function(BuildContext context, List<Widget> children)?
-  tabletChild;
+      tabletChild;
 
   /// Builder function for desktop layout.
   /// Takes the build context and children list and returns a container widget.
   final Widget Function(BuildContext context, List<Widget> children)?
-  desktopChild;
+      desktopChild;
 
   /// The list of children widgets to be arranged in device-specific layouts.
   /// If [childrenBuilder] is provided, this is ignored.
@@ -326,7 +319,7 @@ class ResponsiveLayout extends StatelessWidget {
   /// Dynamic builder function for the children list based on responsive info.
   /// Takes precedence over [children] if provided.
   final List<Widget> Function(BuildContext context, ResponsiveInfo info)?
-  childrenBuilder;
+      childrenBuilder;
 
   /// Optional responsive settings to override those from context.
   final ResponsiveSettingsBase? settings;
@@ -351,21 +344,15 @@ class ResponsiveLayout extends StatelessWidget {
     final resolvedSettings = _resolveSettings(context, settings);
     final info = resolvedSettings.getResponsiveInfo(context);
     final childWidgets = childrenBuilder?.call(context, info) ?? children;
-    if (childWidgets == null) {
-      return const SizedBox.shrink();
-    }
+    if (childWidgets == null) return const SizedBox.shrink();
 
-    if (info.isMobile && mobileChild != null) {
-      return mobileChild!(context, childWidgets);
-    }
-    if (info.isTablet && tabletChild != null) {
-      return tabletChild!(context, childWidgets);
-    }
-    if (info.isDesktop && desktopChild != null) {
-      return desktopChild!(context, childWidgets);
-    }
-
-    return Column(children: childWidgets);
+    return ResponsiveValue<Widget>(
+      defaultValue: Column(children: childWidgets),
+      mobileValue: mobileChild?.call(context, childWidgets),
+      tabletValue: tabletChild?.call(context, childWidgets),
+      desktopValue: desktopChild?.call(context, childWidgets),
+      settings: settings,
+    ).value(context);
   }
 }
 
@@ -431,18 +418,18 @@ class ResponsiveValue<T> {
     final resolvedSettings = _resolveSettings(context, settings);
     final info = resolvedSettings.getResponsiveInfo(context);
 
-    if (valueBuilder != null) {
-      return valueBuilder!(context, info);
-    }
-    if (info.isMobile && mobileValue != null) {
-      return mobileValue!;
-    }
-    if (info.isTablet && tabletValue != null) {
-      return tabletValue!;
-    }
-    if (info.isDesktop && desktopValue != null) {
+    if (valueBuilder != null) return valueBuilder!(context, info);
+
+    if (info.isDesktopOnly && desktopValue != null) {
       return desktopValue!;
     }
+    if (info.isTabletOnly && tabletValue != null) {
+      return tabletValue!;
+    }
+    if (info.isMobileOnly && mobileValue != null) {
+      return mobileValue!;
+    }
+
     return defaultValue;
   }
 }

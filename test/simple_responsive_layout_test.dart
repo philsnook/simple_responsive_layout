@@ -196,16 +196,36 @@ void main() {
       final desktopInfo = settings.getResponsiveInfo(testContext);
       expect(desktopInfo.isDesktopOnly, true);
     });
-  });
 
-  group('ResponsiveChild', () {
-    testWidgets('ResponsiveChild switches widget based on device', (
-      tester,
-    ) async {
+    testWidgets('ResponsiveBuilder builds different layouts based on device',
+        (tester) async {
+      late Widget builtWidget;
+
       await tester.pumpWidget(
         MaterialApp(
           home: MediaQuery(
             data: const MediaQueryData(size: Size(500, 800)), // Mobile
+            child: ResponsiveBuilder(
+              builder: (context, info) {
+                builtWidget = Text(info.deviceType.name);
+                return builtWidget;
+              },
+            ),
+          ),
+        ),
+      );
+
+      expect(find.byWidget(builtWidget), findsOneWidget);
+    });
+  });
+
+  group('ResponsiveChild', () {
+    testWidgets('ResponsiveChild switches widget based on device',
+        (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: MediaQuery(
+            data: const MediaQueryData(size: Size(500, 800)), // Mobile size
             child: ResponsiveChild(
               child: const Text('Default'),
               mobileChild: (context, child) => const Text('Mobile'),
@@ -215,10 +235,10 @@ void main() {
           ),
         ),
       );
+      await tester.pumpAndSettle(); // <- Important to let layout complete
 
-      expect(find.text('Mobile'), findsOneWidget);
+      expect(find.text('Mobile'), findsOneWidget); // Should now pass!
     });
-
     testWidgets(
       'ResponsiveChild falls back to child when no device-specific widget',
       (tester) async {
@@ -330,7 +350,8 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: MediaQuery(
-            data: const MediaQueryData(size: Size(500, 800)), // Mobile
+            data: const MediaQueryData(
+                size: Size(500, 800)), // Mobile width (<600)
             child: ResponsivePadding(
               mobileSize: const EdgeInsets.all(10),
               tabletSize: const EdgeInsets.all(20),
@@ -340,9 +361,11 @@ void main() {
           ),
         ),
       );
+      await tester.pumpAndSettle(); // <- Ensure layout completes
 
       final paddingWidget = tester.widget<Padding>(find.byType(Padding));
-      expect(paddingWidget.padding, const EdgeInsets.all(10));
+      expect(
+          paddingWidget.padding, const EdgeInsets.all(10)); // Should now match
     });
   });
 
