@@ -15,11 +15,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(primarySwatch: Colors.blue),
       home: ResponsiveSettingsProvider(
         // Optional - Use ResponsiveSettingsProvider to provide the breakpoints to the widget tree
-        settings: ResponsiveSettings(
-          mobileWidth: 600,
-          tabletWidth: 1200,
-          // inclusiveBreakpoints: false,
-        ),
+        settings: ResponsiveSettings(mobileWidth: 600, tabletWidth: 1200),
         child: const ResponsiveHomePage(),
       ),
     );
@@ -67,6 +63,8 @@ class ResponsiveHomePage extends StatelessWidget {
                     children: children,
                   ),
                 ),
+                tabletChild: (context, children) =>
+                    Center(child: Wrap(children: children)),
                 desktopChild: (context, children) => Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: children,
@@ -76,6 +74,17 @@ class ResponsiveHomePage extends StatelessWidget {
                   BoxWidget(label: 'Box 2'),
                   BoxWidget(label: 'Box 3'),
                 ],
+              ),
+              //Mobile only widget
+              const ResponsiveVisibility(
+                deviceTypes: [ResponsiveDeviceType.mobile],
+                child: Padding(
+                  padding: EdgeInsets.all(8.0),
+                  child: Text(
+                    "This text is only visible on mobile",
+                    style: TextStyle(fontSize: 20, color: Colors.white),
+                  ),
+                ),
               ),
             ],
           ),

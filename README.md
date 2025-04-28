@@ -11,7 +11,7 @@ A **minimal, powerful Flutter package** for building **responsive layouts, widge
 - 📏 **ResponsiveSizedBox** – Flexible sizing based on device type
 - 🛣️ **ResponsivePadding** – Adaptive padding based on device type
 - 🧰 **ResponsiveBuilder** – Full control with custom builder and responsive info
-- ⚙️ **ResponsiveSettings** – Customize breakpoints and cascading behavior
+- ⚙️ **ResponsiveSettings** – Customize breakpoints
 - 🔄 **ResponsiveInfo** – Complete device information with helpful properties
 - ❌ **Zero dependencies** — pure Flutter implementation
 - ⚡ **Extremely lightweight and fast**
@@ -43,7 +43,6 @@ void main() {
   ResponsiveSettings.defaultSettings = ResponsiveSettings(
     mobileWidth: 600,     // breakpoint between mobile and tablet
     tabletWidth: 1024,    // breakpoint between tablet and desktop
-    inclusiveBreakpoints: true,  // cascading behavior (default)
   );
   
   runApp(const MyApp());
@@ -326,16 +325,11 @@ ResponsiveBuilder(
       // Do something
     }
     
-    // Inclusive properties (with cascading behavior)
-    print('Is mobile (inclusive): ${info.isMobile}');
-    print('Is tablet (inclusive): ${info.isTablet}');
-    print('Is desktop (inclusive): ${info.isDesktop}');
-    
-    // Exclusive properties (specific device only)
-    print('Is mobile only: ${info.isMobileOnly}');
-    print('Is tablet only: ${info.isTabletOnly}');
-    print('Is desktop only: ${info.isDesktopOnly}');
-    
+    // Properties
+    print('Is mobile: ${info.isMobile}');
+    print('Is tablet: ${info.isTablet}');
+    print('Is desktop: ${info.isDesktop}');
+
     return Text('Device type: ${info.deviceType}');
   },
 )
@@ -350,7 +344,6 @@ ResponsiveBuilder(
 ResponsiveSettings.defaultSettings = ResponsiveSettings(
   mobileWidth: 480,    // Smaller mobile breakpoint
   tabletWidth: 1024,   // Standard tablet breakpoint
-  inclusiveBreakpoints: true,  // Cascading behavior
 );
 ```
 
@@ -362,7 +355,6 @@ You can override settings for specific widgets:
 final myCustomSettings = ResponsiveSettings(
   mobileWidth: 400,
   tabletWidth: 800,
-  inclusiveBreakpoints: false, // No cascading behavior
 );
 
 // Apply to a specific widget
@@ -372,23 +364,6 @@ ResponsiveChild(
   // ...
 )
 ```
-
-### Cascading Behavior Explained
-
-With `inclusiveBreakpoints: true` (default):
-- `isMobile` = true for mobile devices
-- `isTablet` = true for tablet AND mobile devices
-- `isDesktop` = true for desktop AND tablet AND mobile devices
-
-With `inclusiveBreakpoints: false`:
-- `isMobile` = true ONLY for mobile devices
-- `isTablet` = true ONLY for tablet devices
-- `isDesktop` = true ONLY for desktop devices
-
-For specific device types only, use:
-- `isMobileOnly` - Always true only on mobile
-- `isTabletOnly` - Always true only on tablet
-- `isDesktopOnly` - Always true only on desktop
 
 ## 📏 How Device Detection Works
 
@@ -411,107 +386,146 @@ void main() {
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return ResponsiveSettingsProvider(
-      settings: ResponsiveSettings(
-        mobileWidth: 600,
-        tabletWidth: 1024,
-        inclusiveBreakpoints: true,
-      ),
-      child: MaterialApp(
-        title: 'Responsive App Demo',
-        theme: ThemeData(
-          primarySwatch: Colors.blue,
-          useMaterial3: true,
-        ),
-        home: const HomePage(),
+    return MaterialApp(
+      title: 'Simple Responsive Layout Demo',
+      theme: ThemeData(primarySwatch: Colors.blue),
+      home: ResponsiveSettingsProvider(
+        // Optional - Use ResponsiveSettingsProvider to provide the breakpoints to the widget tree
+        settings: ResponsiveSettings(mobileWidth: 600, tabletWidth: 1200),
+        child: const ResponsiveHomePage(),
       ),
     );
   }
 }
 
-class HomePage extends StatelessWidget {
-  const HomePage({Key? key}) : super(key: key);
+class ResponsiveHomePage extends StatelessWidget {
+  const ResponsiveHomePage({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Responsive Demo'),
-      ),
-      body: ResponsivePadding(
-        mobileSize: const EdgeInsets.all(8),
-        tabletSize: const EdgeInsets.all(16),
-        desktopSize: const EdgeInsets.all(24),
-        child: ResponsiveBuilder(
-          builder: (context, info) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Current device type: ${info.deviceType}',
-                  style: TextStyle(
-                    fontSize: ResponsiveValue<double>(
-                      defaultValue: 16,
-                      mobileValue: 16,
-                      tabletValue: 20,
-                      desktopValue: 24,
-                    ).value(context),
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                ResponsiveLayout(
-                  children: [
-                    _buildCard('Item 1', Colors.red.shade100),
-                    _buildCard('Item 2', Colors.green.shade100),
-                    _buildCard('Item 3', Colors.blue.shade100),
-                  ],
-                  mobileChild: (context, children) => Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
+      body: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        width: double.infinity,
+        // Use ResponsiveValue to set the background color based on device type
+        color: ResponsiveValue<Color>(
+          defaultValue: Colors.grey,
+          mobileValue: Colors.blue.shade300,
+          tabletValue: Colors.green.shade300,
+          desktopValue: Colors.purple.shade300,
+        ).value(context),
+        child: SafeArea(
+          child: Column(
+            children: [
+              const SizedBox(height: 20),
+              // Use ResponsiveBuilder to get the device type and display it
+              ResponsiveBuilder(
+                builder: (context, info) {
+                  return Text(
+                    'Device Type: ${info.deviceType.name.toUpperCase()}',
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 20),
+              ResponsiveLayout(
+                defaultChild: (context, children) => Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: children,
                   ),
-                  tabletChild: (context, children) => Row(
-                    children: children.map((child) => Expanded(child: child)).toList(),
-                  ),
-                  desktopChild: (context, children) => Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: children.map((child) => Expanded(child: child)).toList(),
+                ),
+                tabletChild: (context, children) =>
+                    Center(child: Wrap(children: children)),
+                desktopChild: (context, children) => Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: children,
+                ),
+                children: const [
+                  BoxWidget(label: 'Box 1'),
+                  BoxWidget(label: 'Box 2'),
+                  BoxWidget(label: 'Box 3'),
+                ],
+              ),
+              //Mobile only widget
+              const ResponsiveVisibility(
+                deviceTypes: [ResponsiveDeviceType.mobile],
+                child: Padding(
+                  padding: EdgeInsets.all(8.0),
+                  child: Text(
+                    "This text is only visible on mobile",
+                    style: TextStyle(fontSize: 20, color: Colors.white),
                   ),
                 ),
-                ResponsiveSizedBox(
-                  mobileSize: const Size(double.infinity, 24),
-                  tabletSize: const Size(double.infinity, 32),
-                  desktopSize: const Size(double.infinity, 48),
-                ),
-                ResponsiveVisibility(
-                  deviceTypes: [ResponsiveDeviceType.mobile],
-                  child: ElevatedButton(
-                    onPressed: () {},
-                    child: const Text('Mobile-Only Button'),
-                  ),
-                ),
-              ],
-            );
-          },
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
+}
 
-  Widget _buildCard(String title, Color color) {
-    return Card(
-      color: color,
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
+class BoxWidget extends StatelessWidget {
+  final String label;
+  const BoxWidget({super.key, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: ResponsiveSizedBox(
+        mobileSize: const Size(120, 120),
+        tabletSize: const Size(170, 170),
+        desktopSize: const Size(220, 220),
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            const Text('This card adjusts its layout based on device size'),
+            Text(
+              label,
+              // Use ResponsiveValue to set the font size in a text style based on device type
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: const ResponsiveValue<double>(
+                  defaultValue: 12,
+                  mobileValue: 40,
+                  tabletValue: 18,
+                  desktopValue: 25,
+                ).value(context),
+              ),
+            ),
+            ResponsiveVisibility(
+              // Use ResponsiveVisibility to show/hide widgets based on device type
+              deviceTypes: const [
+                ResponsiveDeviceType.tablet,
+                ResponsiveDeviceType.desktop,
+              ],
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Text(
+                  "This is only visible on desktop and tablet - larger text on desktop.",
+                  textAlign: TextAlign.center,
+                  // Use ResponsiveValue to set an entire text style based on device type
+                  style: const ResponsiveValue(
+                    defaultValue: TextStyle(fontSize: 14),
+                    desktopValue: TextStyle(fontSize: 20),
+                  ).value(context),
+                ),
+              ),
+            ),
           ],
         ),
       ),

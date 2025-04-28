@@ -71,8 +71,7 @@ enum ResponsiveDeviceType {
 
 /// Default implementation of responsive settings.
 ///
-/// Provides configurable width breakpoints to determine device types
-/// and a flag to control inclusive/exclusive breakpoint behavior.
+/// Provides configurable width breakpoints to determine device types.
 class ResponsiveSettings implements ResponsiveSettingsBase {
   /// Width threshold below which a device is considered mobile.
   final double mobileWidth;
@@ -81,40 +80,23 @@ class ResponsiveSettings implements ResponsiveSettingsBase {
   /// Devices with width >= [mobileWidth] and < [tabletWidth] are tablets.
   final double tabletWidth;
 
-  /// Controls cascading behavior of device type flags.
-  ///
-  /// When true (default):
-  /// - [ResponsiveInfo.isMobile] = true for mobile devices
-  /// - [ResponsiveInfo.isTablet] = true for tablet AND mobile devices
-  /// - [ResponsiveInfo.isDesktop] = true for desktop AND tablet AND mobile devices
-  ///
-  /// When false:
-  /// - [ResponsiveInfo.isMobile] = true ONLY for mobile devices
-  /// - [ResponsiveInfo.isTablet] = true ONLY for tablet devices
-  /// - [ResponsiveInfo.isDesktop] = true ONLY for desktop devices
-  final bool inclusiveBreakpoints;
-
   /// Creates responsive settings with configurable breakpoints.
   ///
   /// [mobileWidth] - Width below which devices are considered mobile (default: 600)
   /// [tabletWidth] - Width below which devices are considered tablet (default: 1024)
-  /// [inclusiveBreakpoints] - Whether device flags should cascade (default: true)
   ResponsiveSettings({
     this.mobileWidth = 600,
     this.tabletWidth = 1024,
-    this.inclusiveBreakpoints = true,
   });
 
   /// Creates a copy of this [ResponsiveSettings] with the given fields replaced.
   ResponsiveSettings copyWith({
     double? mobileWidth,
     double? tabletWidth,
-    bool? inclusiveBreakpoints,
   }) {
     return ResponsiveSettings(
       mobileWidth: mobileWidth ?? this.mobileWidth,
       tabletWidth: tabletWidth ?? this.tabletWidth,
-      inclusiveBreakpoints: inclusiveBreakpoints ?? this.inclusiveBreakpoints,
     );
   }
 
@@ -128,27 +110,16 @@ class ResponsiveSettings implements ResponsiveSettingsBase {
     final isTablet = width >= mobileWidth && width < tabletWidth;
     final isDesktop = width >= tabletWidth;
 
-    return inclusiveBreakpoints
-        ? ResponsiveInfo(
-            isMobile: isDesktop || isTablet || isMobile,
-            isTablet: isTablet || isMobile,
-            isDesktop: isDesktop,
-            deviceType: isMobile
-                ? ResponsiveDeviceType.mobile
-                : isTablet
-                    ? ResponsiveDeviceType.tablet
-                    : ResponsiveDeviceType.desktop,
-          )
-        : ResponsiveInfo(
-            isMobile: isMobile,
-            isTablet: isTablet,
-            isDesktop: isDesktop,
-            deviceType: isMobile
-                ? ResponsiveDeviceType.mobile
-                : isTablet
-                    ? ResponsiveDeviceType.tablet
-                    : ResponsiveDeviceType.desktop,
-          );
+    return ResponsiveInfo(
+      isMobile: isMobile,
+      isTablet: isTablet,
+      isDesktop: isDesktop,
+      deviceType: isMobile
+          ? ResponsiveDeviceType.mobile
+          : isTablet
+              ? ResponsiveDeviceType.tablet
+              : ResponsiveDeviceType.desktop,
+    );
   }
 }
 
@@ -158,31 +129,16 @@ class ResponsiveSettings implements ResponsiveSettingsBase {
 /// for checking if the device falls into specific categories.
 class ResponsiveInfo {
   /// Whether the device should use mobile layouts.
-  /// When [ResponsiveSettings.inclusiveBreakpoints] is true,
-  /// this is always true for mobile devices.
   final bool isMobile;
 
   /// Whether the device should use tablet layouts.
-  /// When [ResponsiveSettings.inclusiveBreakpoints] is true,
-  /// this is true for tablet AND mobile devices.
   final bool isTablet;
 
   /// Whether the device should use desktop layouts.
-  /// When [ResponsiveSettings.inclusiveBreakpoints] is true,
-  /// this is true for desktop AND tablet AND mobile devices.
   final bool isDesktop;
 
   /// The specific device type category (mobile, tablet, or desktop).
   final ResponsiveDeviceType deviceType;
-
-  /// Whether the device is strictly a mobile device (not tablet or desktop).
-  bool get isMobileOnly => deviceType == ResponsiveDeviceType.mobile;
-
-  /// Whether the device is strictly a tablet device (not mobile or desktop).
-  bool get isTabletOnly => deviceType == ResponsiveDeviceType.tablet;
-
-  /// Whether the device is strictly a desktop device (not mobile or tablet).
-  bool get isDesktopOnly => deviceType == ResponsiveDeviceType.desktop;
 
   /// Creates responsive information with device type flags.
   const ResponsiveInfo({
@@ -271,10 +227,8 @@ class ResponsiveChild extends StatelessWidget {
   Widget build(BuildContext context) {
     final resolvedSettings = _resolveSettings(context, settings);
     final info = resolvedSettings.getResponsiveInfo(context);
-    final childWidget = childBuilder?.call(context, info) ?? child;
-    if (childWidget == null) {
-      return const SizedBox.shrink();
-    }
+    final childWidget =
+        childBuilder?.call(context, info) ?? child ?? const SizedBox.shrink();
 
     return ResponsiveValue<Widget>(
       defaultValue: defaultChild?.call(context, childWidget) ?? childWidget,
@@ -354,8 +308,7 @@ class ResponsiveLayout extends StatelessWidget {
   Widget build(BuildContext context) {
     final resolvedSettings = _resolveSettings(context, settings);
     final info = resolvedSettings.getResponsiveInfo(context);
-    final childWidgets = childrenBuilder?.call(context, info) ?? children;
-    if (childWidgets == null) return const SizedBox.shrink();
+    final childWidgets = childrenBuilder?.call(context, info) ?? children ?? [];
 
     return ResponsiveValue<Widget>(
       defaultValue: defaultChild?.call(context, childWidgets) ??
@@ -432,13 +385,13 @@ class ResponsiveValue<T> {
 
     if (valueBuilder != null) return valueBuilder!(context, info);
 
-    if (info.isDesktopOnly && desktopValue != null) {
+    if (info.isDesktop && desktopValue != null) {
       return desktopValue!;
     }
-    if (info.isTabletOnly && tabletValue != null) {
+    if (info.isTablet && tabletValue != null) {
       return tabletValue!;
     }
-    if (info.isMobileOnly && mobileValue != null) {
+    if (info.isMobile && mobileValue != null) {
       return mobileValue!;
     }
 

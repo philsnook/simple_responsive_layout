@@ -33,7 +33,7 @@ void main() {
       final info = ResponsiveSettingsProvider.of(
         testContext,
       ).getResponsiveInfo(testContext);
-      expect(info.isMobileOnly, true);
+      expect(info.isMobile, true);
     });
 
     testWidgets('Uses settings provided directly to widget', (tester) async {
@@ -141,8 +141,8 @@ void main() {
       );
     });
 
-    testWidgets('Non-inclusive breakpoints work correctly', (tester) async {
-      final settings = ResponsiveSettings(inclusiveBreakpoints: false);
+    testWidgets('breakpoints work correctly', (tester) async {
+      final settings = ResponsiveSettings();
       late BuildContext testContext;
 
       await tester.pumpWidget(
@@ -160,7 +160,7 @@ void main() {
       );
 
       final mobileInfo = settings.getResponsiveInfo(testContext);
-      expect(mobileInfo.isMobileOnly, true);
+      expect(mobileInfo.isMobile, true);
 
       await tester.pumpWidget(
         MaterialApp(
@@ -177,7 +177,7 @@ void main() {
       );
 
       final tabletInfo = settings.getResponsiveInfo(testContext);
-      expect(tabletInfo.isTabletOnly, true);
+      expect(tabletInfo.isTablet, true);
 
       await tester.pumpWidget(
         MaterialApp(
@@ -194,7 +194,7 @@ void main() {
       );
 
       final desktopInfo = settings.getResponsiveInfo(testContext);
-      expect(desktopInfo.isDesktopOnly, true);
+      expect(desktopInfo.isDesktop, true);
     });
 
     testWidgets('ResponsiveBuilder builds different layouts based on device',
@@ -306,7 +306,7 @@ void main() {
       final value = ResponsiveValue<String>(
         defaultValue: 'Default',
         valueBuilder: (context, info) =>
-            info.isMobileOnly ? 'Custom Mobile' : 'Other',
+            info.isMobile ? 'Custom Mobile' : 'Other',
       ).value(testContext);
 
       expect(value, 'Custom Mobile');
