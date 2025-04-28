@@ -25,3 +25,8 @@
 # 1.0.3
 - Removed the inclusiveBreakpoints parameter from the ResponsiveLayout widget. This parameter was causing confusion and was not necessary for the intended functionality of the widget. Let's keep things simple!
 - The ResponsiveChild widget no longer requires a child to be passed. If no child is provided, the widget will simply return an empty container. This change makes the widget more flexible and easier to use in various scenarios.
+
+## 1.1.0
+- Added ResponsiveOrientationChild and ResponsiveOrientationValue.
+- Simple orientation-based layouts and values (portrait/landscape support).
+- No breaking changes.

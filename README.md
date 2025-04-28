@@ -11,27 +11,15 @@ A **minimal, powerful Flutter package** for building **responsive layouts, widge
 - 📏 **ResponsiveSizedBox** – Flexible sizing based on device type
 - 🛣️ **ResponsivePadding** – Adaptive padding based on device type
 - 🧰 **ResponsiveBuilder** – Full control with custom builder and responsive info
+- 🔄 **ResponsiveOrientationChild** – Switch layouts based on portrait or landscape mode
+- 💫 **ResponsiveOrientationValue<T>** – Values that adapt to device orientation
 - ⚙️ **ResponsiveSettings** – Customize breakpoints
 - 🔄 **ResponsiveInfo** – Complete device information with helpful properties
 - ❌ **Zero dependencies** — pure Flutter implementation
 - ⚡ **Extremely lightweight and fast**
 
-## 🚀 Installation
 
-Add this to your `pubspec.yaml`:
-
-```yaml
-dependencies:
-  simple_responsive_layout: ^1.0.0
-```
-
-Then run:
-
-```bash
-flutter pub get
-```
-
-## 🛠️ Usage
+## 🚀 Usage
 
 ### Basic Setup (Optional)
 
@@ -260,6 +248,99 @@ ResponsivePadding(
 )
 ```
 
+### NEW in v1.1.0: Orientation Support
+
+#### ResponsiveOrientationChild
+
+Adapt your widget layout based on portrait or landscape orientation:
+
+```dart
+ResponsiveOrientationChild(
+  child: Text('Hello World'),
+  portraitChild: (context, child) => Center(
+    child: Container(
+      width: 300,
+      child: child,
+    ),
+  ),
+  landscapeChild: (context, child) => Align(
+    alignment: Alignment.centerLeft,
+    child: Container(
+      width: 500,
+      child: child,
+    ),
+  ),
+)
+```
+
+#### ResponsiveOrientationValue
+
+Select different values based on device orientation:
+
+```dart
+// In a widget:
+final padding = ResponsiveOrientationValue<EdgeInsets>(
+  defaultValue: EdgeInsets.all(16),
+  portraitValue: EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+  landscapeValue: EdgeInsets.symmetric(horizontal: 32, vertical: 8),
+).value(context);
+
+Container(
+  padding: padding,
+  child: Text('Orientation-aware padding'),
+)
+```
+
+### Combining Device Type and Orientation
+
+You can easily combine device type and orientation responsiveness:
+
+```dart
+// First adapt to device type, then to orientation
+ResponsiveChild(
+  // Device type first
+  mobileChild: (context, child) => Container(
+    color: Colors.blue,
+    // Then orientation for the mobile layout
+    child: ResponsiveOrientationChild(
+      child: child,
+      portraitChild: (ctx, c) => Padding(
+        padding: EdgeInsets.all(8),
+        child: c,
+      ),
+      landscapeChild: (ctx, c) => Padding(
+        padding: EdgeInsets.all(16),
+        child: c,
+      ),
+    ),
+  ),
+  desktopChild: (context, child) => Container(
+    color: Colors.green,
+    child: child,
+  ),
+  child: Text('Responsive content'),
+)
+```
+
+Or use orientation-aware values in device-specific layouts:
+
+```dart
+ResponsiveValue<TextStyle>(
+  // Default style
+  defaultValue: TextStyle(fontSize: 16),
+  // Mobile style with orientation-specific sizes
+  mobileValue: TextStyle(
+    fontSize: ResponsiveOrientationValue<double>(
+      defaultValue: 14,
+      portraitValue: 14,
+      landscapeValue: 12,
+    ).value(context),
+  ),
+  // Desktop style
+  desktopValue: TextStyle(fontSize: 18),
+).value(context)
+```
+
 ### ResponsiveBuilder
 
 For complete custom control:
@@ -268,27 +349,28 @@ For complete custom control:
 ResponsiveBuilder(
   builder: (context, info) {
     // Full access to device info for custom layouts
-    if (info.isMobileOnly) {
-      return ListView(
-        children: [
-          Text('Mobile Layout'),
-          // Mobile-specific widgets
-        ],
-      );
-    } else if (info.isTabletOnly) {
-      return Row(
-        children: [
-          Expanded(
-            flex: 1,
-            child: Text('Sidebar'),
-          ),
-          Expanded(
-            flex: 3,
-            child: Text('Main Content'),
-          ),
-        ],
-      );
+    if (info.isMobile) {
+      // Check orientation for mobile layouts
+      if (info.isPortrait) {
+        return Column(
+          children: [
+            Text('Mobile Portrait Layout'),
+            // Portrait-specific widgets
+          ],
+        );
+      } else {
+        return Row(
+          children: [
+            Text('Mobile Landscape Layout'),
+            // Landscape-specific widgets
+          ],
+        );
+      }
+    } else if (info.isTablet) {
+      // Similar tablet orientation checks
+      // ...
     } else {
+      // Desktop layout
       return Row(
         children: [
           Expanded(
@@ -312,25 +394,25 @@ ResponsiveBuilder(
 
 ## 🧠 Understanding ResponsiveInfo
 
-The `ResponsiveInfo` class gives you complete information about the current device:
+The `ResponsiveInfo` class now includes orientation information:
 
 ```dart
 ResponsiveBuilder(
   builder: (context, info) {
-    // Direct device type
+    // Device type information
     print('Device type: ${info.deviceType}');
     
-    // Equality checks
-    if (info.deviceType == ResponsiveDeviceType.mobile) {
-      // Do something
-    }
+    // Orientation information
+    print('Is portrait: ${info.isPortrait}');
+    print('Is landscape: ${info.isLandscape}');
+    print('Orientation: ${info.orientation}');
     
-    // Properties
+    // Device type properties
     print('Is mobile: ${info.isMobile}');
     print('Is tablet: ${info.isTablet}');
     print('Is desktop: ${info.isDesktop}');
 
-    return Text('Device type: ${info.deviceType}');
+    return Text('Device: ${info.deviceType}, Orientation: ${info.orientation}');
   },
 )
 ```
@@ -375,160 +457,75 @@ Simple MediaQuery width-based detection:
 | Tablet | >= mobileWidth && < tabletWidth |
 | Desktop | >= tabletWidth (default: 1024px) |
 
-## 🏆 Complete Example
+Orientation is determined using MediaQuery:
+
+```dart
+final orientation = MediaQuery.of(context).orientation == Orientation.portrait
+    ? ResponsiveOrientation.portrait
+    : ResponsiveOrientation.landscape;
+```
+
+## 🏆 Example with Orientation Support
 
 ```dart
 import 'package:flutter/material.dart';
 import 'package:simple_responsive_layout/simple_responsive_layout.dart';
 
-void main() {
-  runApp(const MyApp());
-}
-
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class OrientationAwareWidget extends StatelessWidget {
+  const OrientationAwareWidget({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Simple Responsive Layout Demo',
-      theme: ThemeData(primarySwatch: Colors.blue),
-      home: ResponsiveSettingsProvider(
-        // Optional - Use ResponsiveSettingsProvider to provide the breakpoints to the widget tree
-        settings: ResponsiveSettings(mobileWidth: 600, tabletWidth: 1200),
-        child: const ResponsiveHomePage(),
-      ),
-    );
-  }
-}
-
-class ResponsiveHomePage extends StatelessWidget {
-  const ResponsiveHomePage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        width: double.infinity,
-        // Use ResponsiveValue to set the background color based on device type
-        color: ResponsiveValue<Color>(
-          defaultValue: Colors.grey,
-          mobileValue: Colors.blue.shade300,
-          tabletValue: Colors.green.shade300,
-          desktopValue: Colors.purple.shade300,
-        ).value(context),
-        child: SafeArea(
-          child: Column(
-            children: [
-              const SizedBox(height: 20),
-              // Use ResponsiveBuilder to get the device type and display it
-              ResponsiveBuilder(
-                builder: (context, info) {
-                  return Text(
-                    'Device Type: ${info.deviceType.name.toUpperCase()}',
-                    style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(height: 20),
-              ResponsiveLayout(
-                defaultChild: (context, children) => Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: children,
-                  ),
-                ),
-                tabletChild: (context, children) =>
-                    Center(child: Wrap(children: children)),
-                desktopChild: (context, children) => Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: children,
-                ),
-                children: const [
-                  BoxWidget(label: 'Box 1'),
-                  BoxWidget(label: 'Box 2'),
-                  BoxWidget(label: 'Box 3'),
-                ],
-              ),
-              //Mobile only widget
-              const ResponsiveVisibility(
-                deviceTypes: [ResponsiveDeviceType.mobile],
-                child: Padding(
-                  padding: EdgeInsets.all(8.0),
-                  child: Text(
-                    "This text is only visible on mobile",
-                    style: TextStyle(fontSize: 20, color: Colors.white),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class BoxWidget extends StatelessWidget {
-  final String label;
-  const BoxWidget({super.key, required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: ResponsiveSizedBox(
-        mobileSize: const Size(120, 120),
-        tabletSize: const Size(170, 170),
-        desktopSize: const Size(220, 220),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Text(
-              label,
-              // Use ResponsiveValue to set the font size in a text style based on device type
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: const ResponsiveValue<double>(
-                  defaultValue: 12,
-                  mobileValue: 40,
-                  tabletValue: 18,
-                  desktopValue: 25,
-                ).value(context),
-              ),
-            ),
-            ResponsiveVisibility(
-              // Use ResponsiveVisibility to show/hide widgets based on device type
-              deviceTypes: const [
-                ResponsiveDeviceType.tablet,
-                ResponsiveDeviceType.desktop,
+    return ResponsiveBuilder(
+      builder: (context, info) {
+        // Check both device type and orientation
+        if (info.isMobile) {
+          return ResponsiveOrientationChild(
+            // Portrait layout for mobile
+            portraitChild: (ctx, child) => Column(
+              children: [
+                Text('Mobile Portrait', 
+                  style: TextStyle(fontSize: 20)),
+                child,
               ],
-              child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Text(
-                  "This is only visible on desktop and tablet - larger text on desktop.",
-                  textAlign: TextAlign.center,
-                  // Use ResponsiveValue to set an entire text style based on device type
-                  style: const ResponsiveValue(
-                    defaultValue: TextStyle(fontSize: 14),
-                    desktopValue: TextStyle(fontSize: 20),
-                  ).value(context),
-                ),
-              ),
             ),
-          ],
-        ),
-      ),
+            // Landscape layout for mobile
+            landscapeChild: (ctx, child) => Row(
+              children: [
+                Expanded(
+                  flex: 1,
+                  child: Text('Mobile Landscape', 
+                    style: TextStyle(fontSize: 16)),
+                ),
+                Expanded(
+                  flex: 2,
+                  child: child,
+                ),
+              ],
+            ),
+            // The content that will be placed in the layout
+            child: Container(
+              padding: ResponsiveOrientationValue<EdgeInsets>(
+                defaultValue: EdgeInsets.all(16),
+                portraitValue: EdgeInsets.all(24),
+                landscapeValue: EdgeInsets.symmetric(horizontal: 8, vertical: 16),
+              ).value(context),
+              color: Colors.amber[200],
+              child: Text('Content area'),
+            ),
+          );
+        } else if (info.isTablet) {
+          // Tablet layout with orientation handling
+          // ...
+        } else {
+          // Desktop layout
+          return Container(
+            padding: EdgeInsets.all(32),
+            color: Colors.purple[100],
+            child: Text('Desktop Layout'),
+          );
+        }
+      },
     );
   }
 }
@@ -553,11 +550,10 @@ Free for personal and commercial use.
 
 ## 📦 Coming soon
 
-- Better orientation support (portrait/landscape)
 - AnimatedResponsive widgets for smooth transitions
 - Additional responsive helpers (ResponsiveGridView, etc.)
 - Media query shortcuts for more device metrics
-- Orientation-specific overrides (landscape/portrait)
+- More orientation-specific widgets and utilities
 
 ## 🛡️ Status
 

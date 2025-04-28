@@ -109,11 +109,15 @@ class ResponsiveSettings implements ResponsiveSettingsBase {
     final isMobile = width < mobileWidth;
     final isTablet = width >= mobileWidth && width < tabletWidth;
     final isDesktop = width >= tabletWidth;
-
+    final orientation =
+        MediaQuery.of(context).orientation == Orientation.portrait
+            ? ResponsiveOrientation.portrait
+            : ResponsiveOrientation.landscape;
     return ResponsiveInfo(
       isMobile: isMobile,
       isTablet: isTablet,
       isDesktop: isDesktop,
+      orientation: orientation,
       deviceType: isMobile
           ? ResponsiveDeviceType.mobile
           : isTablet
@@ -122,6 +126,8 @@ class ResponsiveSettings implements ResponsiveSettingsBase {
     );
   }
 }
+
+enum ResponsiveOrientation { portrait, landscape }
 
 /// Container for device type information and responsive flags.
 ///
@@ -140,12 +146,17 @@ class ResponsiveInfo {
   /// The specific device type category (mobile, tablet, or desktop).
   final ResponsiveDeviceType deviceType;
 
+  bool get isPortrait => orientation == ResponsiveOrientation.portrait;
+  bool get isLandscape => orientation == ResponsiveOrientation.landscape;
+  final ResponsiveOrientation orientation;
+
   /// Creates responsive information with device type flags.
   const ResponsiveInfo({
     required this.isMobile,
     required this.isTablet,
     required this.isDesktop,
     required this.deviceType,
+    required this.orientation,
   });
 }
 
@@ -626,5 +637,108 @@ class ResponsiveBuilder extends StatelessWidget {
     final resolvedSettings = _resolveSettings(context, settings);
     final info = resolvedSettings.getResponsiveInfo(context);
     return builder(context, info);
+  }
+}
+
+/// A widget that adapts its child layout based on device orientation.
+///
+/// Allows specifying different wrappers for portrait and landscape modes,
+/// or falling back to the provided child if no orientation-specific builder
+/// is provided.
+///
+/// Example:
+/// ```dart
+/// ResponsiveOrientationChild(
+///   child: Text('Hello World'),
+///   portraitChild: (context, child) => Center(child: child),
+///   landscapeChild: (context, child) => Row(children: [child]),
+/// )
+/// ```
+class ResponsiveOrientationChild extends StatelessWidget {
+  /// Builder function for portrait layout.
+  final Widget Function(BuildContext context, Widget child)? portraitChild;
+
+  /// Builder function for landscape layout.
+  final Widget Function(BuildContext context, Widget child)? landscapeChild;
+
+  /// The base child widget to be wrapped in orientation-specific layouts.
+  final Widget? child;
+
+  /// Optional responsive settings to override those from context.
+  final ResponsiveSettingsBase? settings;
+
+  /// Creates an orientation-based child widget.
+  ///
+  /// [child] provides the base widget, while [portraitChild] and [landscapeChild]
+  /// allow customizing its layout depending on device orientation.
+  const ResponsiveOrientationChild({
+    super.key,
+    this.portraitChild,
+    this.landscapeChild,
+    this.child,
+    this.settings,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final childWidget = child ?? const SizedBox.shrink();
+    final info = (settings ?? ResponsiveSettings.defaultSettings)
+        .getResponsiveInfo(context);
+
+    return (info.isPortrait ? portraitChild : landscapeChild)
+            ?.call(context, childWidget) ??
+        childWidget;
+  }
+}
+
+/// A utility class for selecting values based on device orientation.
+///
+/// Allows specifying different values for portrait and landscape modes,
+/// and automatically selects the appropriate value based on the current orientation.
+///
+/// Example:
+/// ```dart
+/// final padding = ResponsiveOrientationValue<EdgeInsets>(
+///   defaultValue: EdgeInsets.all(16),
+///   portraitValue: EdgeInsets.all(8),
+///   landscapeValue: EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+/// ).value(context);
+/// ```
+class ResponsiveOrientationValue<T> {
+  /// The value to use for portrait orientation.
+  final T? portraitValue;
+
+  /// The value to use for landscape orientation.
+  final T? landscapeValue;
+
+  /// The fallback value to use when no orientation-specific value matches.
+  final T defaultValue;
+
+  /// Optional responsive settings to override those from context.
+  final ResponsiveSettingsBase? settings;
+
+  /// Creates an orientation-based value selector.
+  ///
+  /// [defaultValue] is required and used when no specific orientation value is provided.
+  /// [portraitValue] and [landscapeValue] can be provided to override values
+  /// for specific orientations.
+  const ResponsiveOrientationValue({
+    required this.defaultValue,
+    this.portraitValue,
+    this.landscapeValue,
+    this.settings,
+  });
+
+  /// Returns the appropriate value for the current device orientation.
+  ///
+  /// Uses [portraitValue] or [landscapeValue] if provided,
+  /// otherwise falls back to [defaultValue].
+  T value(BuildContext context) {
+    final info = (settings ?? ResponsiveSettings.defaultSettings)
+        .getResponsiveInfo(context);
+
+    return info.isPortrait
+        ? (portraitValue ?? defaultValue)
+        : (landscapeValue ?? defaultValue);
   }
 }
