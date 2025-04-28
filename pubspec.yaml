@@ -4,6 +4,8 @@ version: 1.0.0
 homepage: https://github.com/philsnook/simple_responsive_layout
 repository: https://github.com/philsnook/simple_responsive_layout
 issue_tracker: https://github.com/philsnook/simple_responsive_layout/issues
+publisher: expd.co.uk
+
 topics:
   - responsive
   - layout
