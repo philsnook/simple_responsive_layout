@@ -61,13 +61,11 @@ class ResponsiveHomePage extends StatelessWidget {
               ),
               const SizedBox(height: 20),
               ResponsiveLayout(
-                mobileChild: (context, children) => Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: children,
-                ),
-                tabletChild: (context, children) => Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: children,
+                defaultChild: (context, children) => Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: children,
+                  ),
                 ),
                 desktopChild: (context, children) => Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
