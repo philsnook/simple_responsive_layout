@@ -297,6 +297,11 @@ class ResponsiveChild extends StatelessWidget {
 /// )
 /// ```
 class ResponsiveLayout extends StatelessWidget {
+  /// Builder function for default layout.
+  /// Takes the build context and children list and returns a container widget.
+  final Widget Function(BuildContext context, List<Widget> children)?
+      defaultChild;
+
   /// Builder function for mobile layout.
   /// Takes the build context and children list and returns a container widget.
   final Widget Function(BuildContext context, List<Widget> children)?
@@ -334,6 +339,7 @@ class ResponsiveLayout extends StatelessWidget {
     this.settings,
     this.children,
     this.childrenBuilder,
+    this.defaultChild,
     this.mobileChild,
     this.tabletChild,
     this.desktopChild,
@@ -347,7 +353,8 @@ class ResponsiveLayout extends StatelessWidget {
     if (childWidgets == null) return const SizedBox.shrink();
 
     return ResponsiveValue<Widget>(
-      defaultValue: Column(children: childWidgets),
+      defaultValue: defaultChild?.call(context, childWidgets) ??
+          Column(children: childWidgets),
       mobileValue: mobileChild?.call(context, childWidgets),
       tabletValue: tabletChild?.call(context, childWidgets),
       desktopValue: desktopChild?.call(context, childWidgets),
